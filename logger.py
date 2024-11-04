@@ -3,6 +3,7 @@ import os
 from enum import Enum
 import boto3
 import requests
+import time
 from typing import Optional, Dict
 from botocore.exceptions import ClientError
 from utils import get_time_now, get_current_frame, get_file_name, get_line_number
@@ -21,7 +22,6 @@ class Level(Enum):
     def reset_color(self):
         return '\033[0m'
 
-
 class Logger:
     _instance = None
 
@@ -31,22 +31,26 @@ class Logger:
         return cls._instance
 
     def __init__(self, 
-                 logs_folder: str = "logs",
                  console_output: bool = True,
                  aws_config: Optional[Dict[str, str]] = None,
                  discord_webhook: Optional[str] = None):
         if not hasattr(self, 'initialized'):
-            self.logs_folder = logs_folder
+
+            self.base_path = os.path.dirname(os.path.abspath(__file__))
+
+            self.logs_folder = os.path.join(self.base_path, "logs")
             self.console_output = console_output
             self.discord_webhook = discord_webhook
             self.cloudwatch = None
             self.log_group_name = None
             self.log_stream_name = None
 
-            # Crea el directorio de logs si no existe
-            os.makedirs(logs_folder, exist_ok=True)
+            # Crear el directorio de logs si no existe
+            os.makedirs(self.logs_folder, exist_ok=True)
 
-            # Configurar AWS CloudWatch si se proporcionan credenciales (Falta probarlo aun)
+            self.execution_timestamp = time.strftime('%Y%m%d_%H%M%S')
+            self.current_log_file = f"log_{self.execution_timestamp}.log"
+
             if aws_config and 'log_group_name' in aws_config and 'log_stream_name' in aws_config:
                 self._setup_cloudwatch(aws_config)
 
@@ -57,15 +61,14 @@ class Logger:
         try:
             self.cloudwatch = boto3.client('logs')
             self.log_group_name = aws_config['log_group_name']
-            self.log_stream_name = aws_config['log_stream_name']
 
-            # Crea el grupo de logs si no existe
+            self.log_stream_name = f"stream_{self.execution_timestamp}"
+
             try:
                 self.cloudwatch.create_log_group(logGroupName=self.log_group_name)
             except ClientError:
                 pass
 
-            # Crea el stream de logs si no existe
             try:
                 self.cloudwatch.create_log_stream(
                     logGroupName=self.log_group_name,
@@ -78,31 +81,30 @@ class Logger:
             print(f"Error configurando CloudWatch: {str(e)}")
             self.cloudwatch = None
 
-    def _get_log_info(self):
-        """Obtiene información sobre el archivo y línea donde se llamó al logger"""
-        frame = get_current_frame()
-        return get_file_name(frame), get_line_number(frame)
+    def _write_to_file(self, formatted_message: str):
+        """Escribe el mensaje en el archivo de log de la ejecución actual"""
+        log_file = os.path.join(self.logs_folder, self.current_log_file)
+        
+        os.makedirs(self.logs_folder, exist_ok=True)
+        
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(formatted_message + '\n')
 
     def _format_log(self, level: Level, message: str, filename: str, line: int) -> str:
         """Formatea el mensaje de log según las especificaciones"""
         timestamp = get_time_now()
         return f"{timestamp} | {level.name} | {filename}:{line} | {message}"
 
-    def _write_to_file(self, formatted_message: str):
-        """Escribe el mensaje en el archivo de log del día"""
-        # Extraemos la fecha del timestamp ya formateado (YYYY-MM-DD)
-        # Todo esto utilizandos lo hice utilizando el utils.py, no se si es que se debia agregar algo ahi
-        date = formatted_message.split()[0]
-        log_file = os.path.join(self.logs_folder, f"{date}.log")
-        
-        with open(log_file, 'a', encoding='utf-8') as f:
-            f.write(formatted_message + '\n')
+    def _get_log_info(self):
+        """Obtiene información sobre el archivo y línea donde se llamó al logger"""
+        frame = get_current_frame()
+        return get_file_name(frame), get_line_number(frame)
 
     def _send_to_cloudwatch(self, formatted_message: str):
         """Envía el log a AWS CloudWatch si está configurado"""
         if self.cloudwatch:
             try:
-                timestamp = int(float(get_time_now().split('.')[1]) * 1000)
+                timestamp = int(time.time() * 1000)
                 self.cloudwatch.put_log_events(
                     logGroupName=self.log_group_name,
                     logStreamName=self.log_stream_name,
@@ -128,7 +130,6 @@ class Logger:
         filename, line = self._get_log_info()
         formatted_message = self._format_log(level, message, filename, line)
 
-        # Escribir en archivo
         self._write_to_file(formatted_message)
 
         # Mostrar en consola si está habilitado
@@ -153,11 +154,9 @@ class Logger:
     def critical(self, message: str):
         self.log(Level.CRITICAL, message)
 
-
-# Uso de un singleton para el logger
 logger = Logger()
 
-# Para el uso de 2 versiones AKA logger.info() o info() directamente
+# Funciones de conveniencia AKA funciones y clase
 def log(level: Level, message: str):
     logger.log(level, message)
 
