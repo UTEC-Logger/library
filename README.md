@@ -1,10 +1,3 @@
-Aquí tienes un `README.md` bien estructurado que explica cómo usar tu logger, cómo configurarlo y cómo establecer las credenciales de AWS y CloudWatch.
-
----
-
-### 📄 `README.md`
-
-````markdown
 # utec_logger
 
 Un logger personalizado para Python con salida en consola a color, guardado en archivos locales y soporte opcional para AWS CloudWatch Logs.
@@ -24,7 +17,7 @@ Clona o añade este módulo en tu proyecto:
 
 ```bash
 git clone <repositorio>
-````
+```
 
 Importa el logger en tus scripts:
 
