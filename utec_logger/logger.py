@@ -106,7 +106,7 @@ class Logger:
             sts_client = self.session.client('sts')
             identity = sts_client.get_caller_identity()
 
-            print(f'AWS Ready: {identity['Account']}')
+            print('AWS Ready: ' + identity['Account'])
             return True
         except NoCredentialsError:
             print('AWS is not SET: No credentials')
