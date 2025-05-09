@@ -5,7 +5,7 @@ Un logger personalizado para Python con salida en consola a color, guardado en a
 ## 🚀 Características
 
 - Logs a consola con colores según el nivel (INFO, WARNING, ERROR, CRITICAL)
-- Logs persistentes en archivos locales (`logs/log-<timestamp>.log`)
+- Logs persistentes en archivos locales (`logs/log-<file>-<timestamp>.log`)
 - Integración opcional con AWS CloudWatch para centralizar logs
 - Singleton: mantiene una única instancia del logger
 
@@ -52,7 +52,7 @@ En consola (con colores):
 En archivo:
 
 ```
-logs/log-2025-05-03-12-30-01.log
+logs/log-main-2025-05-03-12-30-01.log
 ```
 
 ---

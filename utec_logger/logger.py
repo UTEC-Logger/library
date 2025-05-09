@@ -166,7 +166,9 @@ class Logger:
         )
 
     def _write_to_file_(self, message: str):
-        location = path.join(self.logs_folder, f'log-{self.today}.log')
+        frame = _get_current_frame_()
+        caller = _get_file_name_(frame).replace(".py", "")
+        location = path.join(self.logs_folder, f'log-{caller}-{self.today}.log')
 
         with open(location, 'a', encoding='utf-8') as file:
             file.write(message + '\n')

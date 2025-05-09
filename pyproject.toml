@@ -1,6 +1,6 @@
 [project]
 name = "utec_logger"
-version = "1.5"
+version = "1.7"
 description = "UTEC Logger"
 authors = [{ name = "Maykol Morales", email = "maykol.morales@utec.edu.pe" }]
 readme = "README.md"
